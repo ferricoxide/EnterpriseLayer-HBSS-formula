@@ -1,0 +1,1 @@
+This project is designed to host a set of [Salt](http://saltstack.com/) states and formulae to govern the installation and configuration of components common to Enterprise infrastructer environments. Each enterprise-layer component will be placed in its own sub-tree and will include a formula-definition for inclusion in a Salt minion configuration's `file_roots` stanza.
