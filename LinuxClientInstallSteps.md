@@ -8,7 +8,7 @@ The McAfee HBSS ePO console exports pre-configured, self-installing SHell ARchiv
 4. Use the `cmdagent` (installed to `/opt/McAfee/cma/bin` by default) to initiate  and verify agent/server communications. Execute:
 
   ~~~
-    /opt/McAfee/cma/bin/cmdagent -P - -C -F
+/opt/McAfee/cma/bin/cmdagent -P - -C -F
   ~~~
 
   If this is not done, the client will need to wait for an ePO neetwork scan to discover the client. This may result in unacceptable delays for ePO-based enforcement actions to begin.
