@@ -6,6 +6,7 @@ The McAfee HBSS ePO console exports pre-configured, self-installing SHell ARchiv
   1. Issue `iptables -A <CHAIN> -p tcp -m tcp --dport <AgentWakupPort> -m comment --comment "McAfee Agent" -j ACCEPT` to add the necessary exceptions to the in-memory rule-sets
 
   **Note:** If iptables implements default-deny by having a catch-all deny-handler as final rule in the chain, this operation will need to be modified to be an INSERT ahead of that rule rather than the APPEND operation shown.
+
   2. Issue a `service iptables save` to save the updated, in-memory rule-sets to disk.
 4. Use the `cmdagent` (default install location is `/opt/McAfee/cma/bin`) to initiate  and verify agent/server communications. Execute:
 
