@@ -6,9 +6,11 @@ The McAfee HBSS ePO console exports pre-configured, self-installing SHell ARchiv
   1. `iptables -A <CHAIN> -p tcp -m tcp --dport <AgentWakupPort> -m comment --comment "McAfee Agent" -j ACCEPT` (Note: if iptables implements default-deny by having a catch-all deny-handler as final rule in the chain, this operation will need to be modified to be an INSERT ahead of that rule rather than the APPEND operation shown)
   2. `service iptables save`
 4. Use the `cmdagent` (installed to `/opt/McAfee/cma/bin` by default) to initiate  and verify agent/server communications. Execute:
+
   ~~~
     /opt/McAfee/cma/bin/cmdagent -P - -C -F
   ~~~
+
   If this is not done, the client will need to wait for an ePO neetwork scan to discover the client. This may result in unacceptable delays for ePO-based enforcement actions to begin.
 5. Communications may be further verified by viewing the contents of the agent's log-file, `/opt/McAfee/cma/scratch/etc/log`
 
