@@ -7,10 +7,8 @@
 #################################################################
 
 {%- set ePOport = '8591' %}
-{%- fwFile = '/etc/sysconfig/iptables' %}
+{%- set fwFile = '/etc/sysconfig/iptables' %}
 {%- set lookFor = 'INPUT .* --dport {{ ePOport }}' %}
-
-
 
 hbss-ePOmanage:
   iptables.append:
