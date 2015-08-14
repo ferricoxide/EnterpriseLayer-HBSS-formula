@@ -17,10 +17,21 @@
 	"serverreqseckey.bin",
 	] %}
 
+HBSS-stageFile:
+  file.managed:
+  - name: /root/install.sh
+  - source: file:///var/tmp/install.sh
+  - source_hash: md5=25f62dd66653b148b5792f0bc3211559
+  - user: root
+  - group: root
+  - mode: 0700
+
 HBSS-installsh:
   cmd.run:
     - name: 'echo "Run HBSS installer"'
     - cwd: '/root'
+    - onlyif: 
+      - HBSS-stageFile
     - unless:
       - 'rpm --quiet -q MFErt'
       - 'rpm --quiet -q MFEcma'
