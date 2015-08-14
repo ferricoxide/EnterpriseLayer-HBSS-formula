@@ -8,7 +8,11 @@
 
 {%- set ePOport = '8591' %}
 {%- set fwFile = '/etc/sysconfig/iptables' %}
-{%- set lookFor = 'INPUT .* --dport {{ ePOport }}' %}
+{%- set lookFor = 'INPUT .* --dport ' + ePOport %}
+
+hbss-FWnotify:
+  cmd.run:
+    - name: 'echo "Inserting requisite rules into iptables"'
 
 hbss-ePOmanage:
   iptables.append:
@@ -23,5 +27,5 @@ hbss-ePOmanage:
     - dport: {{ ePOport }}
     - proto: tcp
     - save: True
-    - unless: 'grep -w -- "{{ lookFor }}" {{ fwFile }}'
+    - unless: 'grep -qw -- "{{ lookFor }}" {{ fwFile }}'
 
