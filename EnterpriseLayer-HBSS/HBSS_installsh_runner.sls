@@ -8,10 +8,7 @@
 #
 #################################################################
 
-{%- set hbssRpms = [
-	"MFEcma",
-	"MFErt",
-	] %}
+{%- set hbssRpms = "MFEcma MFErt" %}
 {%- set keystorPath = '/opt/McAfee/cma/scratch/keystore' %}
 {%- set keyFiles = [
 	"agentprvkey.bin",
@@ -20,11 +17,11 @@
 	"serverreqseckey.bin",
 	] %}
 
-
-{%- for mfeRpm in hbssRpms %}
-  {%- if salt['pkg.file_list'](mfeRpm) %}
-isinstalled-{{ mfeRpm }}:
+HBSS-installsh:
   cmd.run:
-    - name: 'echo "{{ mfeRpm }} is already installed"'
-  {%- endif %}
-{%- endfor %}
+    - name: 'echo "Run HBSS installer"'
+    - cwd: '/root'
+    - unless:
+      - 'rpm --quiet -q MFErt'
+      - 'rpm --quiet -q MFEcma'
+
