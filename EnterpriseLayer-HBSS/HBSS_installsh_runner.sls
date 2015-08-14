@@ -28,10 +28,10 @@ HBSS-stageFile:
 
 HBSS-installsh:
   cmd.run:
-    - name: 'echo "Run HBSS installer"'
+    - name: 'sh install.sh -i'
     - cwd: '/root'
-    - onlyif: 
-      - HBSS-stageFile
+    - require: 
+      - file: HBSS-stageFile
     - unless:
       - 'rpm --quiet -q MFErt'
       - 'rpm --quiet -q MFEcma'
