@@ -1,0 +1,324 @@
+#!/bin/sh
+###getopt for command line arguments.
+###Handle the following
+### -i install, rpm ivh
+### -u upgrade, rpm Uvh  )
+### -b upgrade but no server info
+### -c cloud config path (option for internal usage in bootstrap)
+### -h help
+
+PATH=/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+platform=`uname`
+if [ "$platform" != "Linux" ];then
+	echo "This package must be installed on Linux Platform."
+	echo "Aborting installation."
+	exit 1
+fi
+umask 022
+
+#Below check is added to differentiate between Ubuntu and other Linux platforms 
+#Specify runtime package and cma package names over here
+if [ -f /etc/debian_version ]; then
+RUNTIME_INSTALLER=MFErt.i686.deb
+NATIVE_INSTALLER_FILE=MFEcma.i686.deb
+INSTALL_COMMAND="dpkg -i"
+UPGRADE_COMMAND="dpkg -i --force-confnew" 
+IS_MFERT_ALREADY_INSTALLED=0
+else
+RUNTIME_INSTALLER=MFErt.i686.rpm 
+NATIVE_INSTALLER_FILE=MFEcma.i686.rpm
+INSTALL_COMMAND="rpm -ivh"
+UPGRADE_COMMAND="rpm -Uvh"
+IS_MFERT_ALREADY_INSTALLED=0
+
+installed_version=`rpm -q MFErt`
+if [ $? = 0 ]  && [ $installed_version = "MFErt-2.0-0" ] ; then
+	IS_MFERT_ALREADY_INSTALLED=1
+fi
+
+installed_version=`rpm -q MFEcma`
+if [ $? = 0 ] ; then
+	INSTALL_COMMAND=$UPGRADE_COMMAND
+fi 
+
+
+fi
+
+command=$0
+
+install=
+upgrade=
+extract=
+directory=
+unzip_exe_size=105832
+block_size=512
+cloud=
+
+THIS_MAJOR=4
+THIS_MINOR=8
+THIS_PATCH=0
+THIS_BUILD=1500
+
+THIS_AGENT_VERSION=$(( $THIS_MAJOR*65536 + $THIS_MINOR*256 + $THIS_PATCH ))
+
+usage()
+{
+    echo "Usage: $command [-i|-u|-b|-h  ]"
+    echo "-i : fresh install "
+    echo "-u : upgrade install"
+    echo "-b :Upgrade Agent only , no server info will be updated"
+    echo "-h : show this help"
+}
+
+
+user=`id | cut -d'=' -f2 | cut -d\( -f1`
+if [ $user -ne 0 ]; then
+    echo "This package needs root authentication to install."
+    exit 1
+fi
+
+###Validation: No args, go away
+if [ $# -eq 0 ]; then 
+    usage
+    exit 1
+fi
+
+##Check to see if a higer version of the agent is already installed.
+if [ -f /opt/McAfee/cma/bin/msaconfig ];then
+        v=`LD_LIBRARY_PATH=/opt/McAfee/cma/bin:/opt/McAfee/cma/lib /opt/McAfee/cma/bin/msaconfig -version`
+	agent_major_version=`echo $v | cut -d. -f1`
+	agent_minor_version=`echo $v | cut -d. -f2`
+	agent_patch_version=`echo $v | cut -d. -f3`
+	agent_build_number=`echo $v | cut -d. -f4`
+	installed_agent_version=$(( $agent_major_version*65536 + $agent_minor_version*256 + $agent_patch_version ))
+	if [ $THIS_AGENT_VERSION -lt $installed_agent_version ]; then 
+		echo "A higher version of the agent is already installed. Installation cannot continue"
+		exit 1
+	else
+		if [ $THIS_AGENT_VERSION -gt $installed_agent_version ];then 
+			echo "The installed version is lower.Installation will proceed now"
+		else
+			if [ $THIS_BUILD -gt $agent_build_number ];then 
+				echo "The installed version is lower. Installation will proceed now"
+			else
+				echo "An higher or same version of the agent is already installed. Installation cannot continue"
+				exit 1
+			fi
+		fi
+	fi
+	
+fi
+
+updateserverinfo="yes"
+##First get the options
+while getopts ic:ubh: opt
+  do	case "$opt" in
+      i)  install="yes";;
+      c)  cloud="$OPTARG";;
+      u)  upgrade="yes";;
+      b) upgrade="yes";;
+      h)  usage
+	  exit 0;;
+      [?])	usage
+      exit 1;;
+  esac
+value=`expr $OPTIND - 1`
+done
+shift $value
+
+###Cannot have install and upgrade together
+if [ ! -z "$install" ] && [ ! -z "$upgrade" ];then
+    echo You cannot specify install and upgrade at the same time
+    usage
+    exit 1
+fi
+
+##Cannot have "neither install, nor upgrade"
+if [  -z "$install" ] && [  -z "$upgrade" ];then
+    echo "Neither install nor upgrade has been specified in the options"
+    usage
+    exit 1
+fi
+
+
+###Okay, now that everything has been checked, its time to get going
+##First we need to extract everything to a temp location, 
+##and then unzip it to the final destination
+returncode=0
+keydata_dir=/opt/McAfee/cma/scratch/keydata
+if [ ! -z "$cloud" ];then
+	#For Agent installation through bootstrap.
+	echo "Agent installation through bootstrap."
+	if [ ! -d "$cloud" ];then 
+		echo "Cloud config path doesn't exist($cloud)."
+		exit 1
+	else
+		directory="$cloud"
+		temp_directory="$cloud"
+	fi
+else
+	#For On-Prem install
+	temp_directory=`mktemp -d mfeXXXXXX`
+	if [ -z "$directory" ];then 
+	    directory=$temp_directory
+	fi
+
+	if [ -f /etc/cma.d/bootstrap.xml ];then 
+	    rm -rf /etc/cma.d/bootstrap.xml
+	fi
+	
+	if [ -f "$directory" ];then 
+	    echo Output destination specified is a file which already exists. Cannot overwrite
+	    rm -rf "$temp_directory"
+	    exit 1
+	fi
+
+	if [ ! -e "$directory" ];then 
+	    mkdir -p "$directory"
+	fi    
+fi
+  
+
+if [ -e "$temp_directory" ] ;then 
+    ###rpm has checks for disk space, and so I wont bother about it.
+    ###unzip will also complain is there isnt enough space for the extracted file
+    ###So, all I care about is to have enough space for the zip itself.
+    ###Since the zip is appended to this file itself, it would never be larger that 
+    ###this sfx itself.So havin enough space in $temp_dir to hold the sfx is good enough
+
+  if [ -z "$cloud" ];then
+    required_space=`du -b "$command" | cut -f1`
+    required_space=`expr 2 \* $required_space`
+    echo space required to copy archive is $required_space bytes
+    available_space=`df -B 1 $temp_directory | tail -n -1 | awk '{if ( $4 ~ /%/) { print $3 } else { print $4 } }'`
+    echo space available at $temp_directory is $available_space bytes
+    if [ $required_space -gt $available_space ];then
+	echo Not enough space to extract contents
+	rm -rf $temp_directory
+	exit 1
+    fi
+    
+    echo "extracting archive to $directory... please wait"
+    SKIP=`awk '/^__ARCHIVE_FOLLOWS__/ { print NR + 1; exit 0; }' "$0"`
+    
+
+    tail -n +$SKIP "$command" > "$temp_directory"/payload
+    nblocks=`expr $unzip_exe_size / $block_size`
+    remainder=`expr $unzip_exe_size % $block_size`
+    if [ 0 != $remainder ];then
+	nblocks=`expr $nblocks + 1`
+    fi
+
+#   In linux, the unz executable will have problems in the absence of the run time.Do not extract unzip 
+#   and also, use the plaform native zip command
+#   dd if="$temp_directory"/payload of="$temp_directory"/unz bs=1 count=$unzip_exe_size
+    dd if="$temp_directory"/payload of="$temp_directory"/package.zip bs=512 skip=$nblocks
+    
+#	chmod +x "$temp_directory"/unz;
+#	"$temp_directory"/unz -j -o "$temp_directory"/package.zip -d "$directory"
+#linux unz is built with the toolset. However, before installation , we may not have MFErt installed, which will cause unz to fail
+#execution. There is one and only one way out, and that is to call the native unzip command, which , hopefully, 
+#will always be there on linux
+    
+    #RHEL2 doesnot have unzip installed as native package
+    which unzip > /dev/null 2>&1
+    returncode=$?
+    if [ $returncode -eq 0 ];then
+        unzip -j -o "$temp_directory"/package.zip -d "$directory"
+        returncode=$?
+        if [ $returncode -ne 0 ];then
+                echo "Failed to extract contents of install package. Installer cannot continue.Exiting"
+                exit 1
+        fi
+    else
+        echo "Warning: Agent installation needs unzip utility. Please install unzip utility"
+        exit 1
+    fi
+    rm -rf "$temp_directory"/package.zip
+    rm -rf "$temp_directory"/unz
+   fi
+    keydata_dir=/opt/McAfee/cma/scratch/keydata
+    if [ -n "$install" ] || [ -n "$upgrade" ];then
+	if [ "$updateserverinfo" = "yes" ] ; then
+    		mkdir -p "$keydata_dir"
+    		returncode=$?
+    		if [ $returncode -ne 0 ];then 
+			echo "Failed to create directory for storing key data"
+			exit 1
+    		fi
+    		cp -f "$directory"/srpubkey.bin "$keydata_dir"
+    		cp -f "$directory"/reqseckey.bin "$keydata_dir"
+    		cp -f "$directory"/sr2048pubkey.bin "$keydata_dir"
+    		cp -f "$directory"/req2048seckey.bin "$keydata_dir"
+    		cp -f "$directory"/sitelist.xml "$keydata_dir"/SiteList.xml
+    		cp -f "$directory"/agentfipsmode "$keydata_dir"/agentfipsmode
+			cp -f "$directory"/RepoKeys.ini "$keydata_dir"/RepoKeys.ini
+    		if [ ! -f "$keydata_dir"/srpubkey.bin ] || [ ! -f "$keydata_dir"/reqseckey.bin ] || [ ! -f "$keydata_dir"/SiteList.xml ] || [ ! -f "$keydata_dir"/sr2048pubkey.bin ]|| [ ! -f "$keydata_dir"/req2048seckey.bin ];then
+			echo "Failed to copy sitelist/request key/ server public key to $keydata_dir"
+			rm -rf "$keydata_dir"
+			exit 1
+    		fi 
+    	fi
+    fi
+fi
+
+
+####Now do the actual install/ upgrade stuff
+####The actual operations for copying the reqseckey and other files should already be there in the rpm
+####The rpm is in $directory. So go there and run the rpm
+
+mypwd=`pwd`
+cd "$directory"
+if [ -f /etc/debian_version ] && [ ! -f MFErt.i686.deb ] && [ ! -f MFEcma.i686.deb ] ; then
+	echo "This rpm package is not compatible with this platform."
+	echo "Aborting installation."
+	cd "$mypwd"
+	rm -rf "$temp_directory"
+	exit 1
+elif [ ! -f /etc/debian_version ] && [ ! -f MFErt.i686.rpm ] && [ ! -f MFEcma.i686.rpm ]; then
+	echo "This debian package is not compatible with this platform."
+	echo "Aborting installation."
+	cd "$mypwd"
+	rm -rf "$temp_directory"
+	exit 1
+fi
+if [ -n "$install" ];then
+    if [ "$IS_MFERT_ALREADY_INSTALLED" = 0 ] ; then
+    	$UPGRADE_COMMAND "$RUNTIME_INSTALLER"
+    	returncode=$?
+    	if [ $returncode -ne 0 ];then
+		rm -rf "$keydata_dir"
+		exit 1
+    	fi
+    else
+	echo "Required MFErt version is already installed , so skipping it"
+    fi
+	
+    $INSTALL_COMMAND "$NATIVE_INSTALLER_FILE"
+    returncode=$?
+else
+	if [ -n "$upgrade" ];then
+	   $UPGRADE_COMMAND "$RUNTIME_INSTALLER"
+	   $UPGRADE_COMMAND "$NATIVE_INSTALLER_FILE"
+	    returncode=$?
+	fi
+fi
+cd "$mypwd"
+
+if [ -z "$cloud" ];then
+	rm -rf "$temp_directory"
+fi
+
+if [ $returncode -ne 0 ];then
+    	rm -rf "$keydata_dir"
+	exit 1
+fi
+
+if [ -d "$keydata_dir" ] ;  then
+	rm -rf "$keydata_dir"
+fi
+exit 0
+##DO NOT PUT ANYTHING AFTER __ARCHIVE_FOLLOWS__ UNDER ANY CIRCUMSTANCE (NOT EVEN WHITESPACE). 
+##DOING SO WILL RENDER THE SCRIPT UNUSABLE
+###SUCCESSFUL extraction from the zip depends on it
+__ARCHIVE_FOLLOWS__
