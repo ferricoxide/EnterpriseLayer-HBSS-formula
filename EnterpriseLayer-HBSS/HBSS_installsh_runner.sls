@@ -19,3 +19,12 @@
 	"serverpubkey.bin",
 	"serverreqseckey.bin",
 	] %}
+
+
+{%- for mfeRpm in hbssRpms %}
+  {%- if salt['pkg.file_list'](mfeRpm) %}
+isinstalled-{{ mfeRpm }}:
+  cmd.run:
+    - name: 'echo "{{ mfeRpm }} is already installed"'
+  {%- endif %}
+{%- endfor %}
