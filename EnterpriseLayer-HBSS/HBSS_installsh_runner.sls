@@ -21,7 +21,7 @@ HBSS-stageFile:
   file.managed:
   - name: /root/install.sh
   - source: file:///var/tmp/install.sh
-  - source_hash: md5=25f62dd66653b148b5792f0bc3211559
+  - source_hash: md5=file:///var/tmp/install.sh/md5
   - user: root
   - group: root
   - mode: 0700
