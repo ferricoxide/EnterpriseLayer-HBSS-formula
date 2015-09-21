@@ -35,7 +35,7 @@ HBSS-stageFile:
 
 HBSS-installsh:
   cmd.run:
-    - name: 'sh ./{{ repoFileSrc }} -i'
+    - name: 'sh {{ repoFileSrc }} -i'
     - cwd: '/root'
     - require: 
       - file: HBSS-stageFile
