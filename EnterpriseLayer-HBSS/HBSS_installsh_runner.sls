@@ -8,31 +8,40 @@
 #
 #################################################################
 
-{%- set hbssRpms = "MFEcma MFErt" %}
-{%- set keystorPath = '/opt/McAfee/cma/scratch/keystore' %}
-{%- set keyFiles = [
-	"agentprvkey.bin",
-	"agentpubkey.bin",
-	"serverpubkey.bin",
-	"serverreqseckey.bin",
-	] %}
+{%- set repoHost = pillar['hbss']('repo_uri_host') %}
+{%- set repoPath = pillar['hbss']('repo_uri_root_path') %}
+{%- set repoEnv = pillar['hbss']('repo_uri_config_path') %}
+{%- set repoFileSrc = pillar['hbss']('package_name') %}
+{%- set repoFileHash = pillar['hbss']('package_hash') %}
+{%- set fileSrc = repoHost ~ '/' ~ repoPath ~ '/' repoFileSrc 
+{%- set fileHash = repoHost ~ '/' ~ repoPath ~ '/' repoFileHash 
+{%- set hbssRpms = salt['pillar.get'](
+  'hbss:hbssRpms',
+  [ 'MFEcma', 'MFErt' ]) %}
+{%- set MFEinstallRoot = pillar['hbss']('install_root_dir') %}
+{%- set keystorPath = MFEinstallRoot ~ '/' ~ pillar['hbss']('keystorPath') %}
+{%- set keyFiles = pillar['hbss']('keyFiles') %}
 
 HBSS-stageFile:
   file.managed:
   - name: /root/install.sh
-  - source: file:///var/tmp/install.sh
-  - source_hash: md5=file:///var/tmp/install.sh/md5
+  - source: {{ repoFileSrc }}
+  - source_hash: {{ repoFileHash }}
   - user: root
   - group: root
   - mode: 0700
 
 HBSS-installsh:
   cmd.run:
-    - name: 'sh install.sh -i'
+    - name: 'sh {{ repoFileSrc }} -i'
     - cwd: '/root'
     - require: 
       - file: HBSS-stageFile
     - unless:
-      - 'rpm --quiet -q MFErt'
-      - 'rpm --quiet -q MFEcma'
+{%- for RPM in hbssRpms %}
+      - 'rpm --quiet -q {{ RPM }}'
+{%- endfor %}
+{%- for keyFile in keyFiles %}
+      - 'test -s {{ keystorPath }}/{{ keyFile }}'
+{%- endfor %}
 
