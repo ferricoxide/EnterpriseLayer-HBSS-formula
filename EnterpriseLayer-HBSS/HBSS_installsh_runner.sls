@@ -8,25 +8,26 @@
 #
 #################################################################
 
-{%- set repoHost = pillar['hbss']('repo_uri_host') %}
-{%- set repoPath = pillar['hbss']('repo_uri_root_path') %}
-{%- set repoEnv = pillar['hbss']('repo_uri_config_path') %}
-{%- set repoFileSrc = pillar['hbss']('package_name') %}
-{%- set repoFileHash = pillar['hbss']('package_hash') %}
+{%- set repoHost = pillar['hbss']['repo_uri_host'] %}
+{%- set repoPath = pillar['hbss']['repo_uri_root_path'] %}
+{%- set repoEnv = pillar['hbss']['repo_uri_config_path'] %}
+{%- set repoFileSrc = pillar['hbss']['package_name'] %}
+{%- set repoFileHash = pillar['hbss']['package_hash'] %}
+{%- set hashType = pillar['hbss']['package_hashtype'] %}
 {%- set fileSrc = repoHost ~ '/' ~ repoPath ~ '/' ~ repoFileSrc %}
 {%- set fileHash = repoHost ~ '/' ~ repoPath ~ '/' ~ repoFileHash %}
 {%- set hbssRpms = salt['pillar.get'](
   'hbss:hbssRpms',
   [ 'MFEcma', 'MFErt' ]) %}
-{%- set MFEinstallRoot = pillar['hbss']('install_root_dir') %}
-{%- set keystorPath = MFEinstallRoot ~ '/' ~ pillar['hbss']('keystorPath') %}
-{%- set keyFiles = pillar['hbss']('keyFiles') %}
+{%- set MFEinstallRoot = pillar['hbss']['install_root_dir'] %}
+{%- set keystorPath = MFEinstallRoot ~ '/' ~ pillar['hbss']['keystorPath'] %}
+{%- set keyFiles = pillar['hbss']['keyFiles'] %}
 
 HBSS-stageFile:
   file.managed:
   - name: /root/install.sh
   - source: {{ repoFileSrc }}
-  - source_hash: {{ repoFileHash }}
+  - source_hash: sha512={{ repoFileHash }}
   - user: root
   - group: root
   - mode: 0700
