@@ -1,0 +1,52 @@
+hbss:
+
+  #####################################################################
+  # Required parameters
+  # Uncomment and set all required parameters or the formula will fail
+  #####################################################################
+
+  # source uri for the repo containing the HBSS configuration files; this is
+  # prepended to each of the required filename parameters below and used as
+  # the source for placing the files on the salt minion
+  #repo_uri_host: 'http://S3BUCKET.F.Q.D.N'
+  #repo_uri_root_path: 'mcafee/linux/mcafee-agent
+  #repo_uri_config_path: 'prod'
+  #repo_uri_config_path: 'test'
+  #repo_uri_config_path: 'dev'
+
+  # Directory where HBSS is installed to the system
+  #install_root_dir: '/opt/McAfee/cma'
+
+  # Subdirectory where SSL keyfiles are stored
+  #keystorPath: 'scratch/keystore'
+
+  # List of RPMs to look for
+  #hbssRpms:
+  #  - "MFEcma"
+  #  - "MFErt"
+
+  # List of keyfiles to look for
+  # keyFiles:
+  #   - "agentprvkey.bin"
+  #   - "agentpubkey.bin"
+  #   - "serverpubkey.bin"
+  #   - "serverreqseckey.bin"
+
+  # Name of installer to download
+  #package_name: 'install.sh'
+
+  # Name of hash to download 
+  #package_name: 'install.sh.SHA512'
+
+  ######################
+  # Optional parameters
+  ######################
+
+  # List of ports to open outbound for hbss communication
+  #client_out_ports:
+  #  - 80
+  #  - 443
+
+  # List of ports to open inbound for remote-management of hbss
+  #client_in_ports:
+  #  - 8591
