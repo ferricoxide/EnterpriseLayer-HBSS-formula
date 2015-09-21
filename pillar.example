@@ -36,7 +36,7 @@ hbss:
   #package_name: 'install.sh'
 
   # Name of hash to download 
-  #package_name: 'install.sh.SHA512'
+  #package_hash: 'install.sh.SHA512'
 
   ######################
   # Optional parameters
