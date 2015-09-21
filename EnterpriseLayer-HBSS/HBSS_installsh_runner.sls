@@ -27,14 +27,14 @@ HBSS-stageFile:
   file.managed:
   - name: /root/install.sh
   - source: {{ repoFileSrc }}
-  - source_hash: sha512={{ repoFileHash }}
+  - source_hash: {{ hashType }}={{ repoFileHash }}
   - user: root
   - group: root
   - mode: 0700
 
 HBSS-installsh:
   cmd.run:
-    - name: 'sh {{ repoFileSrc }} -i'
+    - name: 'sh ./{{ repoFileSrc }} -i'
     - cwd: '/root'
     - require: 
       - file: HBSS-stageFile
