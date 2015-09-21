@@ -13,8 +13,8 @@
 {%- set repoEnv = pillar['hbss']('repo_uri_config_path') %}
 {%- set repoFileSrc = pillar['hbss']('package_name') %}
 {%- set repoFileHash = pillar['hbss']('package_hash') %}
-{%- set fileSrc = repoHost ~ '/' ~ repoPath ~ '/' repoFileSrc 
-{%- set fileHash = repoHost ~ '/' ~ repoPath ~ '/' repoFileHash 
+{%- set fileSrc = repoHost ~ '/' ~ repoPath ~ '/' repoFileSrc %}
+{%- set fileHash = repoHost ~ '/' ~ repoPath ~ '/' repoFileHash %}
 {%- set hbssRpms = salt['pillar.get'](
   'hbss:hbssRpms',
   [ 'MFEcma', 'MFErt' ]) %}
