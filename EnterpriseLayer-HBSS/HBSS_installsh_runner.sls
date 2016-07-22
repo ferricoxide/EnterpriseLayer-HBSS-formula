@@ -14,12 +14,11 @@
 {%- set repoFullPath = repoHost ~ '/' ~ repoPath ~ '/' ~ repoEnv %}
 {%- set repoFileSrc = pillar['hbss']['package_name'] %}
 {%- set repoFileHash = pillar['hbss']['package_hash'] %}
-{%- set hashType = pillar['hbss']['package_hashtype'] %}
 {%- set fileSrc = repoFullPath ~ '/' ~ repoFileSrc %}
 {%- set fileHash = repoFullPath ~ '/' ~ repoFileHash %}
 {%- set hbssRpms = salt['pillar.get'](
-  'hbss:hbssRpms',
-  [ 'MFEcma', 'MFErt' ]) %}
+    'hbss:hbssRpms',
+    [ 'MFEcma', 'MFErt' ]) %}
 {%- set MFEinstallRoot = pillar['hbss']['install_root_dir'] %}
 {%- set keystorPath = MFEinstallRoot ~ '/' ~ pillar['hbss']['keystorPath'] %}
 {%- set keyFiles = pillar['hbss']['keyFiles'] %}
@@ -33,7 +32,7 @@ HBSS-stageFile:
   file.managed:
   - name: /root/install.sh
   - source: {{ fileSrc }}
-  - source_hash: {{ hashType }}={{ repoFileHash }}
+  - source_hash: {{ fileHash }}
   - user: root
   - group: root
   - mode: 0700
