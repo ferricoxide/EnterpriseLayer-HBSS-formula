@@ -37,6 +37,7 @@ HBSS-stageFile:
   - user: root
   - group: root
   - mode: 0700
+  - show_changes: False
   - require:
     - pkg: HBSS install dependencies
 
