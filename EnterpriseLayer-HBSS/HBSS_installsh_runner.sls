@@ -27,6 +27,7 @@ HBSS install dependencies:
   pkg.installed:
     - pkgs:
       - unzip
+      - ed
 
 HBSS-stageFile:
   file.managed:
